@@ -1,0 +1,54 @@
+{
+  "grid_segundos_pared": 57.6378440010003,
+  "por_variante_fold": [
+    {
+      "etiqueta": "grid_v1",
+      "metric": "euclidean",
+      "wall_segundos": 8.366856741999982,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v1",
+      "metric": "cityblock",
+      "wall_segundos": 5.563446309999563,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v2",
+      "metric": "euclidean",
+      "wall_segundos": 5.533985281999776,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v2",
+      "metric": "cityblock",
+      "wall_segundos": 5.373258468000131,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v3",
+      "metric": "euclidean",
+      "wall_segundos": 8.155203287000404,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v3",
+      "metric": "cityblock",
+      "wall_segundos": 8.414398207999511,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v4",
+      "metric": "euclidean",
+      "wall_segundos": 8.25061937800001,
+      "n_jobs": 4
+    },
+    {
+      "etiqueta": "grid_v4",
+      "metric": "cityblock",
+      "wall_segundos": 7.906146256999818,
+      "n_jobs": 4
+    }
+  ],
+  "prediccion_test_segundos": 3.311143773000367
+}
