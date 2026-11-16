@@ -1,0 +1,163 @@
+{
+  "model": "KNN manual (cdist)",
+  "target": "log_bought",
+  "variante": "v1",
+  "configuracion": {
+    "k": 100,
+    "weights": "distance",
+    "metric": "cityblock"
+  },
+  "features": [
+    "Rating",
+    "has_discount",
+    "is_best_seller_flag",
+    "is_sponsored_flag",
+    "has_coupon",
+    "is_free_delivery",
+    "has_sustainability_badge",
+    "log_price",
+    "log_reviews",
+    "log_title_words",
+    "log_delivery_cost",
+    "buy_box_unknown"
+  ],
+  "n_features": 12,
+  "random_state": 42,
+  "evaluacion": "test congelado antes de CV; grupos y escalado ajustado solo en train",
+  "preprocesamiento": {
+    "datasets": "dataset_v1.csv a dataset_v4.csv originales, compartidos con otros modelos",
+    "imputacion": "medianas y limites precomputados en limpieza sobre todo el dataset; posible fuga",
+    "escalado": "StandardScaler ajustado dentro de cada fold solo sobre train",
+    "is_price_outlier_excluida": true
+  },
+  "test_comun": {
+    "filas_comunes": 24436,
+    "filas_test": 4887,
+    "filas_train_val": 19549,
+    "filas_exclusivas_v3_v4_entrenamiento": 6766,
+    "pct_test_con_gemelo_en_train": 0.0
+  },
+  "metrics_log": {
+    "MAE_log": 0.5000357566396847,
+    "RMSE_log": 0.7617182074899215,
+    "R2_log": 0.4527067806558811,
+    "MAPE_log_pct": 8.8519106822376
+  },
+  "metrics_unidades": {
+    "MAE_unidades": 493.30155458714614,
+    "RMSE_unidades": 3707.8135773832933,
+    "R2_unidades": 0.19265191958039785,
+    "RMSLE_unidades": 0.7617182074899215,
+    "MAPE_unidades_pct": 78.91555214044327,
+    "MAPE_unidades_pct_y50": 78.91555214044327
+  },
+  "baseline_mediana": {
+    "MAE_log": 0.8452404258644801,
+    "RMSE_log": 1.2603475919800176,
+    "R2_log": -0.02502228728127387
+  },
+  "validation_by_variant": [
+    {
+      "variante": "v1",
+      "k": 100,
+      "weights": "distance",
+      "metric": "cityblock",
+      "MAE_val_media": 0.5211557864972928,
+      "MAE_val_std": 0.07892869719340283,
+      "MAE_val_IC95_inf": 0.46442214101165447,
+      "MAE_val_IC95_sup": 0.5712682090045054,
+      "MAE_unidades": 736.6398579019757,
+      "RMSE_unidades": 5273.420192283324,
+      "RMSLE_unidades": 0.7659879474668049,
+      "R2_log": 0.6279743042054987
+    },
+    {
+      "variante": "v3",
+      "k": 100,
+      "weights": "distance",
+      "metric": "cityblock",
+      "MAE_val_media": 0.5251774309657916,
+      "MAE_val_std": 0.09209991470495646,
+      "MAE_val_IC95_inf": 0.47240562571794603,
+      "MAE_val_IC95_sup": 0.5752154260896567,
+      "MAE_unidades": 739.1725051020817,
+      "RMSE_unidades": 5239.538478789853,
+      "RMSLE_unidades": 0.7768980573076707,
+      "R2_log": 0.6173011685873591
+    },
+    {
+      "variante": "v2",
+      "k": 100,
+      "weights": "distance",
+      "metric": "cityblock",
+      "MAE_val_media": 0.52603569477248,
+      "MAE_val_std": 0.08548527630656731,
+      "MAE_val_IC95_inf": 0.4642239666982847,
+      "MAE_val_IC95_sup": 0.5869107704367307,
+      "MAE_unidades": 738.5306355764827,
+      "RMSE_unidades": 5273.256727344231,
+      "RMSLE_unidades": 0.7768449728897354,
+      "R2_log": 0.6173534654117844
+    },
+    {
+      "variante": "v4",
+      "k": 100,
+      "weights": "distance",
+      "metric": "cityblock",
+      "MAE_val_media": 0.5300153220775341,
+      "MAE_val_std": 0.09950664961804512,
+      "MAE_val_IC95_inf": 0.4708762891892152,
+      "MAE_val_IC95_sup": 0.5920256915153899,
+      "MAE_unidades": 740.7831005863541,
+      "RMSE_unidades": 5239.330574317416,
+      "RMSLE_unidades": 0.786994888498328,
+      "R2_log": 0.6072891607432997
+    }
+  ],
+  "pairwise": [
+    {
+      "comparación": "precio: eliminar vs imputar (con delivery_cost)",
+      "config_a": "v1: k=100, distance, cityblock",
+      "config_b": "v3: k=100, distance, cityblock",
+      "MAE_val_a": 0.5211557864972928,
+      "MAE_val_b": 0.5251774309657916,
+      "mejor": "v1",
+      "diferencia_pct": 0.7657687157468118
+    },
+    {
+      "comparación": "precio: eliminar vs imputar (sin delivery_cost)",
+      "config_a": "v2: k=100, distance, cityblock",
+      "config_b": "v4: k=100, distance, cityblock",
+      "MAE_val_a": 0.52603569477248,
+      "MAE_val_b": 0.5300153220775341,
+      "mejor": "v2",
+      "diferencia_pct": 0.7508513696273695
+    },
+    {
+      "comparación": "delivery_cost: imputar 0 vs columna ausente (precio eliminado)",
+      "config_a": "v1: k=100, distance, cityblock",
+      "config_b": "v2: k=100, distance, cityblock",
+      "MAE_val_a": 0.5211557864972928,
+      "MAE_val_b": 0.52603569477248,
+      "mejor": "v1",
+      "diferencia_pct": 0.9276762629763935
+    },
+    {
+      "comparación": "delivery_cost: imputar 0 vs columna ausente (precio imputado)",
+      "config_a": "v3: k=100, distance, cityblock",
+      "config_b": "v4: k=100, distance, cityblock",
+      "MAE_val_a": 0.5251774309657916,
+      "MAE_val_b": 0.5300153220775341,
+      "mejor": "v3",
+      "diferencia_pct": 0.9127832555442179
+    }
+  ],
+  "seconds_prediction_test": 3.311143773000367,
+  "seconds_grid": 57.6378440010003,
+  "limitaciones": [
+    "Se usan los datasets originales compartidos por todos los modelos.",
+    "Las imputaciones y limites IQR globales previos a la particion pueden introducir fuga.",
+    "El objetivo es el punto medio del intervalo reportado por Amazon.",
+    "El test se limita a filas con precio observado para ser comun a las cuatro variantes."
+  ]
+}
