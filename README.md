@@ -23,11 +23,6 @@ Amazon product sales/
 │   ├── dataset_v1.csv … dataset_v4.csv   # Salidas (se regeneran)
 │   ├── LIMPIEZA_DATOS.md                 # Documento técnico de decisiones
 │   └── VARIABLES.md                      # Diccionario de variables
-├── Modelos de ejemplo/          # Notebooks de laboratorio (referencia)
-│   ├── 2026_10_22_SVM.ipynb
-│   ├── Copy_of_lab1_parte1.ipynb
-│   ├── Copy_of_lab2_parte1.ipynb
-│   └── Copy_of_lab2_parte2.ipynb
 └── Modelos entrenados/          # Notebooks, modelos y resultados de KNN, SVR y otros
     ├── KNN.ipynb
     ├── SVM.ipynb                 # SVR para predecir una variable continua
@@ -39,7 +34,6 @@ Amazon product sales/
 | Carpeta | Contenido |
 |---|---|
 | **`Limpieza de datos/`** | Todo el pipeline: CSV de entrada, notebook, los 4 datasets generados y la documentación técnica (`LIMPIEZA_DATOS.md`, `VARIABLES.md`). |
-| **`Modelos de ejemplo/`** | Notebooks de laboratorio usados como referencia. |
 | **`Modelos entrenados/`** | Notebooks de KNN, SVR, Random Forest y MLP, más modelos serializados y resultados. |
 | **`Informes`** | Carpeta la cual guarda los respectivos informes E1 y E2 en sus diferentes versiones |
 
@@ -194,22 +188,31 @@ entrenar.
   `buy_box_unknown`. v1/v3 incluyen además `log_delivery_cost`; v2/v4 no tienen esa variable.
 - KNN y SVR excluyen `is_price_outlier` como predictor. Random Forest y MLP usan v4, incluyen esta
   bandera numérica y codifican `buy_box_status` como categoría. Las listas de features no son
-  idénticas entre las cuatro familias de modelos.
-- Ambos modelos excluyen `is_price_outlier` como predictor siguiendo la selección de KNN. Esto no
-  implica eliminar filas con ventas altas: la cola del **objetivo de ventas** se conserva.
+  idénticas entre las cuatro familias de modelos. Excluir esa bandera no implica eliminar filas con
+  ventas altas: la cola del **objetivo de ventas** se conserva.
 - Las métricas primarias de selección son MAE en escala logarítmica; también se reportan RMSE y R²
   en log, además de métricas en unidades tras aplicar `expm1`.
-- El test de 4.887 filas se congela antes de ajustar hiperparámetros. La partición agrupa filas que
-  tienen el mismo vector completo de características seleccionadas, de modo que dichos vectores no
-  aparezcan simultáneamente en entrenamiento y test. Esto es una decisión de evaluación, no una
-  regla de que productos distintos no puedan compartir características.
+- **Partición de KNN y SVR:** se reserva un test de 4.887 filas de las 24.436 filas comunes
+  (20 %); las 19.549 restantes (80 %) quedan para búsqueda/validación y entrenamiento final. La
+  partición externa usa `StratifiedGroupKFold` de 5 folds: un fold se congela como test y los otros
+  cuatro se usan para desarrollo. La búsqueda de hiperparámetros usa, dentro de esas filas de
+  desarrollo, validación cruzada agrupada de 4 folds; tras elegir la configuración, el ajuste final
+  usa todo el 80 % disponible.
+- En este protocolo, **grupo** significa filas con el mismo vector completo de features elegido
+  para agrupar; no significa un producto identificado por ID. Así se evalúa el caso en que el vector
+  completo de features del test no está repetido en entrenamiento. Es una decisión de evaluación,
+  no un requisito general ni una regla de que productos distintos no puedan compartir algunas o
+  todas sus características. Para v3/v4, además, las 6.766 filas adicionales con precio imputado se
+  pueden usar en entrenamiento si su grupo no está en el test; el test común mantiene productos
+  con precio observado.
 - Los CSV ya contienen imputaciones y límites calculados durante la limpieza antes de la partición.
   Los pipelines de modelado ajustan sus transformaciones internas en los folds/conjuntos de
   entrenamiento, pero no pueden deshacer ese preprocesamiento global previo; las métricas deben
   interpretarse teniendo en cuenta esta limitación.
-- KNN y SVR usan una evaluación por grupos con un test común de 4.887 filas. Random Forest y MLP
-  usan una partición aleatoria estratificada 70/15/15 de v4 (21.841 entrenamiento, 4.680
-  validación y 4.681 prueba); sus archivos de índices confirman que es la misma partición para ambos.
+- KNN y SVR usan la partición agrupada 80/20 descrita arriba, con un test común de 4.887 filas.
+  Random Forest y MLP usan una partición aleatoria estratificada 70/15/15 de v4 (21.841
+  entrenamiento, 4.680 validación y 4.681 prueba); sus archivos de índices confirman que es la
+  misma partición para ambos.
   Las cuatro métricas de test **no son comparables como un ranking directo**: los modelos no
   comparten el mismo conjunto de prueba ni exactamente el mismo protocolo. Las evaluaciones
   agrupadas y aleatorias responden a escenarios distintos; compartir valores de features entre dos
