@@ -1,0 +1,228 @@
+{
+  "model": "Support Vector Regression (SVR)",
+  "target": "log_bought",
+  "selection_metric": "MAE en escala logarítmica",
+  "random_state": 42,
+  "features_by_variant": {
+    "v1": [
+      "Rating",
+      "has_discount",
+      "is_best_seller_flag",
+      "is_sponsored_flag",
+      "has_coupon",
+      "is_free_delivery",
+      "has_sustainability_badge",
+      "log_price",
+      "log_reviews",
+      "log_title_words",
+      "buy_box_unknown",
+      "log_delivery_cost"
+    ],
+    "v2": [
+      "Rating",
+      "has_discount",
+      "is_best_seller_flag",
+      "is_sponsored_flag",
+      "has_coupon",
+      "is_free_delivery",
+      "has_sustainability_badge",
+      "log_price",
+      "log_reviews",
+      "log_title_words",
+      "buy_box_unknown"
+    ],
+    "v3": [
+      "Rating",
+      "has_discount",
+      "is_best_seller_flag",
+      "is_sponsored_flag",
+      "has_coupon",
+      "is_free_delivery",
+      "has_sustainability_badge",
+      "log_price",
+      "log_reviews",
+      "log_title_words",
+      "buy_box_unknown",
+      "log_delivery_cost"
+    ],
+    "v4": [
+      "Rating",
+      "has_discount",
+      "is_best_seller_flag",
+      "is_sponsored_flag",
+      "has_coupon",
+      "is_free_delivery",
+      "has_sustainability_badge",
+      "log_price",
+      "log_reviews",
+      "log_title_words",
+      "buy_box_unknown"
+    ]
+  },
+  "group_features": [
+    "Rating",
+    "has_discount",
+    "is_best_seller_flag",
+    "is_sponsored_flag",
+    "has_coupon",
+    "is_free_delivery",
+    "has_sustainability_badge",
+    "log_price",
+    "log_reviews",
+    "log_title_words",
+    "buy_box_unknown"
+  ],
+  "best_params": {
+    "v1": {
+      "svr__C": 0.05,
+      "svr__epsilon": 0.025,
+      "svr__gamma": 0.015,
+      "svr__kernel": "rbf"
+    },
+    "v2": {
+      "svr__C": 0.075,
+      "svr__epsilon": 0.025,
+      "svr__gamma": 0.015,
+      "svr__kernel": "rbf"
+    },
+    "v3": {
+      "svr__C": 0.01,
+      "svr__epsilon": 0.025,
+      "svr__gamma": 0.015,
+      "svr__kernel": "rbf"
+    },
+    "v4": {
+      "svr__C": 0.05,
+      "svr__epsilon": 0.05,
+      "svr__gamma": 0.005,
+      "svr__kernel": "rbf"
+    }
+  },
+  "validation_metrics": {
+    "v1": {
+      "MAE_log_mean": 0.2864661383614241,
+      "MAE_log_std": 0.06081570509073197,
+      "sample_rows": 2089,
+      "folds": 4
+    },
+    "v2": {
+      "MAE_log_mean": 0.22548275369100768,
+      "MAE_log_std": 0.02189997008719511,
+      "sample_rows": 2066,
+      "folds": 4
+    },
+    "v3": {
+      "MAE_log_mean": 0.48957784934469156,
+      "MAE_log_std": 0.18340962636348102,
+      "sample_rows": 2105,
+      "folds": 4
+    },
+    "v4": {
+      "MAE_log_mean": 0.3759864887660912,
+      "MAE_log_std": 0.1642379262999016,
+      "sample_rows": 2011,
+      "folds": 4
+    }
+  },
+  "test_metrics": {
+    "v1": {
+      "MAE_log": 0.4833971697509351,
+      "RMSE_log": 0.7481967667155797,
+      "R2_log": 0.4719645888300408,
+      "MAE_unidades": 527.7882771964144,
+      "RMSE_unidades": 3945.9053066076135,
+      "R2_unidades": 0.08563761041118068,
+      "RMSLE_unidades": 0.7481967667155797
+    },
+    "v2": {
+      "MAE_log": 0.4835567336803204,
+      "RMSE_log": 0.7446270916242189,
+      "R2_log": 0.4769911231274534,
+      "MAE_unidades": 507.7488570577117,
+      "RMSE_unidades": 3867.043651735137,
+      "R2_unidades": 0.12182072183277859,
+      "RMSLE_unidades": 0.7446270916242189
+    },
+    "v3": {
+      "MAE_log": 0.4844075775622269,
+      "RMSE_log": 0.7706214752586289,
+      "R2_log": 0.4398380450633901,
+      "MAE_unidades": 545.5252452135719,
+      "RMSE_unidades": 4090.5486744770215,
+      "R2_unidades": 0.01737419339612345,
+      "RMSLE_unidades": 0.7706214752586289
+    },
+    "v4": {
+      "MAE_log": 0.5040740200405557,
+      "RMSE_log": 0.7769478956741925,
+      "R2_log": 0.43060298830702726,
+      "MAE_unidades": 530.4245438889212,
+      "RMSE_unidades": 3951.5612569790005,
+      "R2_unidades": 0.08301448882062157,
+      "RMSLE_unidades": 0.7769478956741925
+    }
+  },
+  "n_support_vectors": {
+    "v1": 16266,
+    "v2": 16287,
+    "v3": 23239,
+    "v4": 22430
+  },
+  "train_rows": {
+    "v1": 19549,
+    "v2": 19549,
+    "v3": 26315,
+    "v4": 26315
+  },
+  "test_rows": {
+    "v1": 4887,
+    "v2": 4887,
+    "v3": 4887,
+    "v4": 4887
+  },
+  "search": {
+    "sample_size_requested": 2000,
+    "cv": "StratifiedGroupKFold(n_splits=4, shuffle=True)",
+    "scoring": "neg_mean_absolute_error",
+    "parameter_grid": {
+      "svr__kernel": [
+        "rbf"
+      ],
+      "svr__C": [
+        0.01,
+        0.025,
+        0.05,
+        0.075,
+        0.1
+      ],
+      "svr__epsilon": [
+        0.025,
+        0.05,
+        0.075
+      ],
+      "svr__gamma": [
+        0.005,
+        0.01,
+        0.015
+      ]
+    },
+    "seconds_by_variant": {
+      "v1": 29.158964940999795,
+      "v2": 29.422272745001465,
+      "v3": 27.587962313999014,
+      "v4": 26.341943796000123
+    }
+  },
+  "final_fit_seconds": {
+    "v1": 27.175387958999636,
+    "v2": 26.14121020300081,
+    "v3": 52.10857274400041,
+    "v4": 49.969231569999465
+  },
+  "limitations": [
+    "El objetivo es el punto medio del rango de compras reportado por Amazon.",
+    "La búsqueda usa una muestra agrupada de entrenamiento por el costo computacional de SVR.",
+    "Las variantes v3/v4 incorporan filas con precio imputado en entrenamiento.",
+    "Los datasets contienen imputaciones y transformaciones hechas antes de la partición."
+  ]
+}
