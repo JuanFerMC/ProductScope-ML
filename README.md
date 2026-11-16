@@ -24,11 +24,15 @@ Amazon product sales/
 │   ├── LIMPIEZA_DATOS.md                 # Documento técnico de decisiones
 │   └── VARIABLES.md                      # Diccionario de variables
 ├── Modelos de ejemplo/          # Notebooks de laboratorio (referencia)
+│   ├── 2026_10_22_SVM.ipynb
+│   ├── Copy_of_lab1_parte1.ipynb
 │   ├── Copy_of_lab2_parte1.ipynb
 │   └── Copy_of_lab2_parte2.ipynb
 └── Modelos entrenados/          # Notebooks, modelos y resultados de KNN, SVR y otros
     ├── KNN.ipynb
     ├── SVM.ipynb                 # SVR para predecir una variable continua
+    ├── RandomForestRegressor.ipynb
+    ├── Red_Neuronal_MLPRegressor.ipynb
     └── Models_Results/           # Métricas, predicciones, búsquedas y modelos
 ```
 
@@ -36,7 +40,7 @@ Amazon product sales/
 |---|---|
 | **`Limpieza de datos/`** | Todo el pipeline: CSV de entrada, notebook, los 4 datasets generados y la documentación técnica (`LIMPIEZA_DATOS.md`, `VARIABLES.md`). |
 | **`Modelos de ejemplo/`** | Notebooks de laboratorio usados como referencia. |
-| **`Modelos entrenados/`** | Notebooks de KNN, SVR y otros modelos, más modelos serializados y sus resultados. |
+| **`Modelos entrenados/`** | Notebooks de KNN, SVR, Random Forest y MLP, más modelos serializados y resultados. |
 | **`Informes`** | Carpeta la cual guarda los respectivos informes E1 y E2 en sus diferentes versiones |
 
 > **Nota:** el pipeline trabaja con rutas relativas a la carpeta `Limpieza de datos/`, así que el
@@ -148,14 +152,21 @@ Las cuatro variantes comparten el mismo pipeline; solo cambian esas dos decision
 
 ---
 
-## Modelos de regresión: KNN y SVR
+## Modelos de regresión
 
-Los notebooks [`Modelos entrenados/KNN.ipynb`](Modelos%20entrenados/KNN.ipynb) y
-[`Modelos entrenados/SVM.ipynb`](Modelos%20entrenados/SVM.ipynb) predicen
-`log_bought = log1p(bought_in_last_month)` a partir de los datasets v1–v4. Como el objetivo es
-continuo, el modelo de soporte vectorial es **SVR (Support Vector Regression)**, no SVC de
-clasificación. Ambos notebooks mantienen las transformaciones y los datos generados por el pipeline
-de limpieza; no eliminan registros por tener ventas altas.
+El proyecto contiene cuatro modelos supervisados para predecir
+`log_bought = log1p(bought_in_last_month)`:
+
+| Modelo | Notebook | Dataset de entrenamiento | Familia |
+|---|---|---|---|
+| KNN | [`KNN.ipynb`](Modelos%20entrenados/KNN.ipynb) | v1–v4 | Vecinos más cercanos para regresión |
+| SVR | [`SVM.ipynb`](Modelos%20entrenados/SVM.ipynb) | v1–v4 | Support Vector Regression |
+| Random Forest | [`RandomForestRegressor.ipynb`](Modelos%20entrenados/RandomForestRegressor.ipynb) | v4 | Ensamble de árboles |
+| MLP | [`Red_Neuronal_MLPRegressor.ipynb`](Modelos%20entrenados/Red_Neuronal_MLPRegressor.ipynb) | v4 | Red neuronal multicapa |
+
+El objetivo es continuo, por lo que la máquina de soporte se implementa como **SVR**, no como SVC
+de clasificación. Todos los modelos usan los datasets del pipeline de limpieza y conservan las
+observaciones de ventas altas; los valores extremos no se eliminan por ser extremos.
 
 ### Cómo ejecutar los notebooks
 
@@ -167,11 +178,12 @@ cd "Modelos entrenados"
 ../.venv/bin/jupyter notebook
 ```
 
-Abre `KNN.ipynb` o `SVM.ipynb` y ejecuta sus celdas en orden. Los notebooks crean o actualizan sus
-artefactos en `Modelos entrenados/Models_Results/knn/` y
-`Modelos entrenados/Models_Results/svm/`, respectivamente. KNN guarda el `split_indices.json`
-compartido que SVR utiliza para conservar el mismo test. Los artefactos actuales también permiten
-consultar resultados sin volver a entrenar.
+Abre el notebook del modelo y ejecuta sus celdas en orden. Random Forest genera los índices
+aleatorios que MLP reutiliza para comparar sobre la misma partición; KNN genera los índices
+agrupados que SVR reutiliza. Por ello, al regenerar todos los resultados desde cero, ejecuta primero
+KNN y Random Forest, y luego SVR y MLP. Cada notebook crea o actualiza su carpeta de resultados
+correspondiente. Los artefactos actuales también permiten consultar resultados sin volver a
+entrenar.
 
 ### Protocolo común y variables
 
@@ -180,6 +192,9 @@ consultar resultados sin volver a entrenar.
 - Las variables predictoras son indicadores de promociones y características del producto, `Rating`,
   variables transformadas como `log_price`, `log_reviews` y `log_title_words`, e
   `buy_box_unknown`. v1/v3 incluyen además `log_delivery_cost`; v2/v4 no tienen esa variable.
+- KNN y SVR excluyen `is_price_outlier` como predictor. Random Forest y MLP usan v4, incluyen esta
+  bandera numérica y codifican `buy_box_status` como categoría. Las listas de features no son
+  idénticas entre las cuatro familias de modelos.
 - Ambos modelos excluyen `is_price_outlier` como predictor siguiendo la selección de KNN. Esto no
   implica eliminar filas con ventas altas: la cola del **objetivo de ventas** se conserva.
 - Las métricas primarias de selección son MAE en escala logarítmica; también se reportan RMSE y R²
@@ -189,8 +204,16 @@ consultar resultados sin volver a entrenar.
   aparezcan simultáneamente en entrenamiento y test. Esto es una decisión de evaluación, no una
   regla de que productos distintos no puedan compartir características.
 - Los CSV ya contienen imputaciones y límites calculados durante la limpieza antes de la partición.
-  Los pipelines ajustan escalado e imputación interna en los folds, pero no pueden deshacer ese
-  preprocesamiento global previo; las métricas deben interpretarse teniendo en cuenta esta limitación.
+  Los pipelines de modelado ajustan sus transformaciones internas en los folds/conjuntos de
+  entrenamiento, pero no pueden deshacer ese preprocesamiento global previo; las métricas deben
+  interpretarse teniendo en cuenta esta limitación.
+- KNN y SVR usan una evaluación por grupos con un test común de 4.887 filas. Random Forest y MLP
+  usan una partición aleatoria estratificada 70/15/15 de v4 (21.841 entrenamiento, 4.680
+  validación y 4.681 prueba); sus archivos de índices confirman que es la misma partición para ambos.
+  Las cuatro métricas de test **no son comparables como un ranking directo**: los modelos no
+  comparten el mismo conjunto de prueba ni exactamente el mismo protocolo. Las evaluaciones
+  agrupadas y aleatorias responden a escenarios distintos; compartir valores de features entre dos
+  filas no demuestra que sean el mismo producto ni constituye por sí solo fuga de información.
 
 ### KNN de regresión
 
@@ -256,12 +279,56 @@ una comparación inferencial adicional. Las filas de test de v1–v4 representan
 por lo que las métricas permiten observar el efecto de las variantes del dataset; las métricas de
 SVR por variante también reflejan cambios en los datos de entrenamiento.
 
+### Random Forest Regressor
+
+[`RandomForestRegressor.ipynb`](Modelos%20entrenados/RandomForestRegressor.ipynb) entrena sobre
+v4, que contiene 31.202 filas. Su pipeline imputa numéricas por mediana y `buy_box_status` por la
+categoría más frecuente, y aplica One-Hot Encoding a esta última. No escala las variables, algo que
+no es necesario para los árboles. Usa 12 configuraciones muestreadas de hiperparámetros y selecciona
+por RMSE en la partición de validación; luego ajusta el modelo final con entrenamiento más
+validación. La configuración seleccionada tiene 350 árboles, profundidad máxima 20,
+`min_samples_split=5`, `min_samples_leaf=2` y `max_features=0.7`.
+
+En su test aleatorio de 4.681 filas obtuvo MAE log = **0,1772**, RMSE log = **0,4463**, R² log =
+**0,8596**, MAE original = **280,2 ventas** y R² original = **0,8651**. El notebook también exporta
+importancia de variables, un árbol representativo y análisis de residuos.
+
+### Red neuronal MLP Regressor
+
+[`Red_Neuronal_MLPRegressor.ipynb`](Modelos%20entrenados/Red_Neuronal_MLPRegressor.ipynb) también
+usa v4 y la misma partición aleatoria 70/15/15 de Random Forest. Su preprocesamiento escala
+variables numéricas y aplica One-Hot Encoding a `buy_box_status`. La búsqueda prueba 12
+configuraciones mediante `RandomizedSearchCV` con 3 folds en el conjunto de entrenamiento; selecciona
+por RMSE logarítmico. El MLP final usa capas `(128, 64, 32)`, activación `tanh`, `alpha=0.0001`,
+tasa inicial de aprendizaje `0.001` y early stopping.
+
+En el test aleatorio compartido obtuvo MAE log = **0,2481**, RMSE log = **0,5394**, R² log =
+**0,7950**, MAE original = **351,4 ventas** y R² original = **0,7728**. Se guardan además la curva
+de pérdida, la búsqueda de hiperparámetros y las predicciones.
+
+### Resumen de resultados guardados
+
+| Modelo y variante | Test usado | MAE log | RMSE log | R² log | MAE en unidades |
+|---|---|---:|---:|---:|---:|
+| KNN v1 | Agrupado, 4.887 filas | 0,5000 | 0,7617 | 0,4527 | 493,3 |
+| SVR v1 | Agrupado, 4.887 filas | 0,4834 | 0,7482 | 0,4720 | 527,8 |
+| Random Forest v4 | Aleatorio, 4.681 filas | 0,1772 | 0,4463 | 0,8596 | 280,2 |
+| MLP v4 | Aleatorio, 4.681 filas | 0,2481 | 0,5394 | 0,7950 | 351,4 |
+
+**Importante:** los resultados de Random Forest y MLP son muy buenos en su test aleatorio, mientras
+KNN y SVR se reportan sobre el test agrupado. No se debe concluir solo con esta tabla que los
+primeros generalizan mejor: el cambio de partición, tamaño del test y posibilidad de encontrar
+vectores de features observados previamente cambian la tarea medida. Dentro del par RF/MLP la
+comparación sí usa exactamente los mismos índices; dentro del par KNN/SVR también.
+
 ### Artefactos generados
 
 | Carpeta | Contenido principal |
 |---|---|
 | `Modelos entrenados/Models_Results/knn/` | `metrics.json`, `results_summary.csv`, `hyperparameter_search.csv`, `grid_agg.csv`, `test_predictions.csv`, `split_indices.json`, `knn_final.joblib` y gráficas. |
 | `Modelos entrenados/Models_Results/svm/` | `metrics.json`, `validation_summary.csv`, `hyperparameter_search.csv`, `test_predictions.csv`, `error_by_sales_category.csv`, `svr_v1_final.joblib`–`svr_v4_final.joblib` y gráficas. |
+| `Modelos entrenados/Models_Results/results_random_forest/` | `metrics.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, importancia de variables, árbol, residuos y modelo serializado. |
+| `Modelos entrenados/Models_Results/mlp/` | `metrics.json`, `best_hyperparameters.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, curva de pérdida y modelo serializado. |
 
 Los detalles de configuración, validación, limitaciones y resultados completos están en los notebooks
 y en los archivos `metrics.json` de cada carpeta.
