@@ -220,6 +220,8 @@ entrenar.
 
 ### KNN de regresión
 
+KNN es un método basado en instancias: para una observación nueva, identifica los vecinos más cercanos en el espacio de características y combina sus valores objetivo para producir la predicción. En esta implementación se prueban pesos uniformes y pesos inversos a la distancia; estos últimos dan mayor influencia a los vecinos más próximos. Su rendimiento depende de la métrica, del escalado y de que existan observaciones suficientemente similares en el conjunto de entrenamiento.
+
 [`KNN.ipynb`](Modelos%20entrenados/KNN.ipynb) implementa KNN manualmente con distancias calculadas
 mediante `cdist` y verifica el comportamiento frente a `KNeighborsRegressor`. Evalúa
 `k ∈ {1, 3, 5, 7, 10, 15, 25, 40, 60, 100}`, pesos uniformes o inversamente proporcionales a la
@@ -248,6 +250,8 @@ información. Las métricas de los dos protocolos responden a escenarios distint
 identificarse por separado.
 
 ### SVR (máquina de soporte vectorial para regresión)
+
+SVR busca una función de regresión que mantenga las desviaciones dentro de una banda de tolerancia `epsilon`, penalizando principalmente los errores que quedan fuera de ella. El kernel RBF permite representar relaciones no lineales entre las características y el objetivo. Los parámetros `C`, `epsilon` y `gamma` controlan, respectivamente, la penalización de errores, el ancho de la banda y el alcance de la influencia de cada observación; por eso el escalado dentro del pipeline es esencial.
 
 [`SVM.ipynb`](Modelos%20entrenados/SVM.ipynb) compara configuraciones RBF y selecciona
 hiperparámetros por variante con MAE logarítmico. La búsqueda explora `C ∈ {0,01; 0,025; 0,05;
@@ -283,6 +287,8 @@ por lo que las métricas permiten observar el efecto de las variantes del datase
 SVR por variante también reflejan cambios en los datos de entrenamiento.
 
 ### Random Forest Regressor
+
+Random Forest combina múltiples árboles de decisión entrenados sobre muestras y subconjuntos aleatorios de características. En regresión, agrega las predicciones de los árboles, lo que permite capturar relaciones no lineales e interacciones sin exigir escalado de las variables. La aleatoriedad del ensamble ayuda a reducir la varianza de un árbol individual, aunque la importancia de variables debe interpretarse como una medida del uso predictivo dentro del modelo y no como evidencia causal.
 
 [`RandomForestRegressor.ipynb`](Modelos%20entrenados/RandomForestRegressor.ipynb) entrena sobre
 v4, que contiene 31.202 filas. Su pipeline imputa numéricas por mediana y `buy_box_status` por la
@@ -336,6 +342,8 @@ Aunque Ridge y Random Forest/MLP usan particiones 70/15/15 de v4 con el mismo ta
 El notebook exporta el pipeline final (`ridge_final.joblib`), `metrics.json`, `best_hyperparameters.json`, `cross_validation_results.csv`, `hyperparameter_search.csv`, `test_predictions.csv` y `split_indices.json`. Estos archivos permiten consultar tanto la selección de hiperparámetros como la evaluación final sin volver a entrenar el modelo.
 
 ### Red neuronal MLP Regressor
+
+El MLP es una red neuronal de capas densas que aprende transformaciones no lineales de las características mediante pesos, sesgos y funciones de activación. La arquitectura `(128, 64, 32)` representa el número de neuronas de sus capas ocultas; la estandarización facilita la optimización y el *early stopping* detiene el entrenamiento cuando la validación deja de mejorar, ayudando a limitar el sobreajuste. Su flexibilidad también implica mayor sensibilidad a la arquitectura, la inicialización y los hiperparámetros que en modelos más simples.
 
 [`Red_Neuronal_MLPRegressor.ipynb`](Modelos%20entrenados/Red_Neuronal_MLPRegressor.ipynb) también
 usa v4 y la misma partición aleatoria 70/15/15 de Random Forest. Su preprocesamiento escala
