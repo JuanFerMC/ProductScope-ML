@@ -28,13 +28,14 @@ Amazon product sales/
     ├── SVM.ipynb                 # SVR para predecir una variable continua
     ├── RandomForestRegressor.ipynb
     ├── Red_Neuronal_MLPRegressor.ipynb
+    ├── Ridge_regression.ipynb
     └── Models_Results/           # Métricas, predicciones, búsquedas y modelos
 ```
 
 | Carpeta | Contenido |
 |---|---|
 | **`Limpieza de datos/`** | Todo el pipeline: CSV de entrada, notebook, los 4 datasets generados y la documentación técnica (`LIMPIEZA_DATOS.md`, `VARIABLES.md`). |
-| **`Modelos entrenados/`** | Notebooks de KNN, SVR, Random Forest y MLP, más modelos serializados y resultados. |
+| **`Modelos entrenados/`** | Notebooks de KNN, SVR, Random Forest, MLP y Ridge, más modelos serializados y resultados. |
 | **`Informes`** | Carpeta la cual guarda los respectivos informes E1 y E2 en sus diferentes versiones |
 
 > **Nota:** el pipeline trabaja con rutas relativas a la carpeta `Limpieza de datos/`, así que el
@@ -148,7 +149,7 @@ Las cuatro variantes comparten el mismo pipeline; solo cambian esas dos decision
 
 ## Modelos de regresión
 
-El proyecto contiene cuatro modelos supervisados para predecir
+El proyecto contiene cinco modelos supervisados para predecir
 `log_bought = log1p(bought_in_last_month)`:
 
 | Modelo | Notebook | Dataset de entrenamiento | Familia |
@@ -157,6 +158,7 @@ El proyecto contiene cuatro modelos supervisados para predecir
 | SVR | [`SVM.ipynb`](Modelos%20entrenados/SVM.ipynb) | v1–v4 | Support Vector Regression |
 | Random Forest | [`RandomForestRegressor.ipynb`](Modelos%20entrenados/RandomForestRegressor.ipynb) | v4 | Ensamble de árboles |
 | MLP | [`Red_Neuronal_MLPRegressor.ipynb`](Modelos%20entrenados/Red_Neuronal_MLPRegressor.ipynb) | v4 | Red neuronal multicapa |
+| Ridge Regression | [`Ridge_regression.ipynb`](Modelos%20entrenados/Ridge_regression.ipynb) | v4 | Regresión lineal regularizada (L2) |
 
 El objetivo es continuo, por lo que la máquina de soporte se implementa como **SVR**, no como SVC
 de clasificación. Todos los modelos usan los datasets del pipeline de limpieza y conservan las
@@ -172,9 +174,7 @@ cd "Modelos entrenados"
 ../.venv/bin/jupyter notebook
 ```
 
-Abre el notebook del modelo y ejecuta sus celdas en orden. Random Forest genera los índices
-aleatorios que MLP reutiliza para comparar sobre la misma partición; KNN genera los índices
-agrupados que SVR reutiliza. Por ello, al regenerar todos los resultados desde cero, ejecuta primero
+Abre el notebook del modelo y ejecuta sus celdas en orden. Random Forest genera los índices aleatorios que MLP reutiliza para comparar sobre la misma partición; Ridge conserva su propia partición aleatoria 70/15/15. KNN genera los índices agrupados que SVR reutiliza. Por ello, al regenerar todos los resultados desde cero, ejecuta primero
 KNN y Random Forest, y luego SVR y MLP. Cada notebook crea o actualiza su carpeta de resultados
 correspondiente. Los artefactos actuales también permiten consultar resultados sin volver a
 entrenar.
@@ -212,7 +212,9 @@ entrenar.
 - KNN y SVR usan la partición agrupada 80/20 descrita arriba, con un test común de 4.887 filas.
   Random Forest y MLP usan una partición aleatoria estratificada 70/15/15 de v4 (21.841
   entrenamiento, 4.680 validación y 4.681 prueba); sus archivos de índices confirman que es la
-  misma partición para ambos.
+  misma partición para ambos. Ridge también usa v4 y una partición 70/15/15 (21.840 entrenamiento,
+  4.681 validación y 4.681 prueba), pero sus índices no coinciden con los de Random Forest/MLP.
+  Ridge selecciona `alpha` sobre un único conjunto de validación, no mediante validación cruzada.
   Las cuatro métricas de test **no son comparables como un ranking directo**: los modelos no
   comparten el mismo conjunto de prueba ni exactamente el mismo protocolo. Las evaluaciones
   agrupadas y aleatorias responden a escenarios distintos; compartir valores de features entre dos
@@ -296,6 +298,18 @@ En su test aleatorio de 4.681 filas obtuvo MAE log = **0,1772**, RMSE log = **0,
 **0,8596**, MAE original = **280,2 ventas** y R² original = **0,8651**. El notebook también exporta
 importancia de variables, un árbol representativo y análisis de residuos.
 
+### Ridge Regression
+
+[`Ridge_regression.ipynb`](Modelos%20entrenados/Ridge_regression.ipynb) implementa una regresión lineal regularizada con penalización L2. El modelo predice `log_bought` a partir del dataset v4 (31.202 filas) y utiliza 11 variables numéricas y `buy_box_status` como variable categórica. Excluye `bought_in_last_month`, `log_bought` y `bought_cat` de los predictores; esta última se reserva para estratificar.
+
+El preprocesamiento se integra en un `Pipeline`: imputación por mediana y estandarización de variables numéricas, e imputación por moda y One-Hot Encoding de la variable categórica. La estandarización es relevante porque la penalización L2 depende de la escala de los coeficientes.
+
+La partición es estratificada 70/15/15: 21.840 filas de entrenamiento, 4.681 de validación y 4.681 de prueba. El notebook evalúa 25 valores de `alpha` entre `10^-4` y `10^4`, seleccionando el que minimiza RMSE en validación. El valor guardado es `alpha=0,0001`. Después ajusta el pipeline final con entrenamiento más validación y reserva el test para la evaluación final.
+
+En los artefactos versionados, Ridge obtuvo MAE log = **0,6081**, RMSE log = **0,8776**, R² log = **0,4800**, MAE original = **990,9 ventas**, RMSE original = **5.662,0 ventas** y R² original = **0,0727**. El notebook exporta el pipeline, las métricas, la búsqueda de `alpha`, las predicciones y los índices de la partición.
+
+**Limitaciones experimentales:** la selección de `alpha` usa un único conjunto de validación (holdout), no validación cruzada. Además, aunque Ridge y Random Forest/MLP usan particiones 70/15/15 de v4 con el mismo tamaño de test, sus índices no coinciden; por tanto, sus métricas no son una comparación pareada ni deben usarse para establecer un ranking definitivo. El mejor valor de `alpha` está en el límite inferior de la rejilla explorada y las métricas en escala original muestran un R² bajo; se recomienda ampliar la búsqueda hacia valores menores y evaluar con validación cruzada dentro del conjunto de entrenamiento antes de extraer conclusiones.
+
 ### Red neuronal MLP Regressor
 
 [`Red_Neuronal_MLPRegressor.ipynb`](Modelos%20entrenados/Red_Neuronal_MLPRegressor.ipynb) también
@@ -317,6 +331,7 @@ de pérdida, la búsqueda de hiperparámetros y las predicciones.
 | SVR v1 | Agrupado, 4.887 filas | 0,4834 | 0,7482 | 0,4720 | 527,8 |
 | Random Forest v4 | Aleatorio, 4.681 filas | 0,1772 | 0,4463 | 0,8596 | 280,2 |
 | MLP v4 | Aleatorio, 4.681 filas | 0,2481 | 0,5394 | 0,7950 | 351,4 |
+| Ridge v4 | Aleatorio, 4.681 filas (split propio) | 0,6081 | 0,8776 | 0,4800 | 990,9 |
 
 **Importante:** los resultados de Random Forest y MLP son muy buenos en su test aleatorio, mientras
 KNN y SVR se reportan sobre el test agrupado. No se debe concluir solo con esta tabla que los
@@ -332,6 +347,7 @@ comparación sí usa exactamente los mismos índices; dentro del par KNN/SVR tam
 | `Modelos entrenados/Models_Results/svm/` | `metrics.json`, `validation_summary.csv`, `hyperparameter_search.csv`, `test_predictions.csv`, `error_by_sales_category.csv`, `svr_v1_final.joblib`–`svr_v4_final.joblib` y gráficas. |
 | `Modelos entrenados/Models_Results/results_random_forest/` | `metrics.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, importancia de variables, árbol, residuos y modelo serializado. |
 | `Modelos entrenados/Models_Results/mlp/` | `metrics.json`, `best_hyperparameters.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, curva de pérdida y modelo serializado. |
+| `Modelos entrenados/Models_Results/results_ridge/` | `metrics.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json` y pipeline Ridge serializado. |
 
 Los detalles de configuración, validación, limitaciones y resultados completos están en los notebooks
 y en los archivos `metrics.json` de cada carpeta.
