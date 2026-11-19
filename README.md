@@ -212,9 +212,7 @@ entrenar.
 - KNN y SVR usan la partición agrupada 80/20 descrita arriba, con un test común de 4.887 filas.
   Random Forest y MLP usan una partición aleatoria estratificada 70/15/15 de v4 (21.841
   entrenamiento, 4.680 validación y 4.681 prueba); sus archivos de índices confirman que es la
-  misma partición para ambos. Ridge también usa v4 y una partición 70/15/15 (21.840 entrenamiento,
-  4.681 validación y 4.681 prueba), pero sus índices no coinciden con los de Random Forest/MLP.
-  Ridge selecciona `alpha` sobre un único conjunto de validación, no mediante validación cruzada.
+  misma partición para ambos. Ridge también usa v4 y conserva una partición estratificada 70/15/15 (21.840 entrenamiento, 4.681 validación y 4.681 prueba), con índices propios que no coinciden con los de Random Forest/MLP. Para seleccionar `alpha`, combina entrenamiento y validación en un conjunto de desarrollo de 26.521 filas y aplica K-Fold de 5 folds; el test de 4.681 filas permanece aislado hasta la evaluación final.
   Las cuatro métricas de test **no son comparables como un ranking directo**: los modelos no
   comparten el mismo conjunto de prueba ni exactamente el mismo protocolo. Las evaluaciones
   agrupadas y aleatorias responden a escenarios distintos; compartir valores de features entre dos
@@ -300,15 +298,42 @@ importancia de variables, un árbol representativo y análisis de residuos.
 
 ### Ridge Regression
 
-[`Ridge_regression.ipynb`](Modelos%20entrenados/Ridge_regression.ipynb) implementa una regresión lineal regularizada con penalización L2. El modelo predice `log_bought` a partir del dataset v4 (31.202 filas) y utiliza 11 variables numéricas y `buy_box_status` como variable categórica. Excluye `bought_in_last_month`, `log_bought` y `bought_cat` de los predictores; esta última se reserva para estratificar.
+[`Ridge_regression.ipynb`](Modelos%20entrenados/Ridge_regression.ipynb) implementa una regresión lineal regularizada mediante penalización L2. Predice `log_bought` usando el dataset v4 (31.202 filas), con 11 variables numéricas y `buy_box_status` como variable categórica. Excluye `bought_in_last_month`, `log_bought` y `bought_cat` de los predictores; `bought_cat` se utiliza únicamente para estratificar la partición.
 
-El preprocesamiento se integra en un `Pipeline`: imputación por mediana y estandarización de variables numéricas, e imputación por moda y One-Hot Encoding de la variable categórica. La estandarización es relevante porque la penalización L2 depende de la escala de los coeficientes.
+El preprocesamiento está integrado en un `Pipeline`: imputación por mediana y estandarización para las variables numéricas, e imputación por moda y One-Hot Encoding para `buy_box_status`. La estandarización es especialmente importante en Ridge porque la penalización L2 actúa sobre la magnitud de los coeficientes; sin escalado, las variables con unidades o rangos mayores podrían influir de manera desproporcionada en la regularización.
 
-La partición es estratificada 70/15/15: 21.840 filas de entrenamiento, 4.681 de validación y 4.681 de prueba. El notebook evalúa 25 valores de `alpha` entre `10^-4` y `10^4`, seleccionando el que minimiza RMSE en validación. El valor guardado es `alpha=0,0001`. Después ajusta el pipeline final con entrenamiento más validación y reserva el test para la evaluación final.
+#### Selección de hiperparámetros y evaluación
 
-En los artefactos versionados, Ridge obtuvo MAE log = **0,6081**, RMSE log = **0,8776**, R² log = **0,4800**, MAE original = **990,9 ventas**, RMSE original = **5.662,0 ventas** y R² original = **0,0727**. El notebook exporta el pipeline, las métricas, la búsqueda de `alpha`, las predicciones y los índices de la partición.
+Se conserva la partición estratificada 70/15/15: 21.840 filas de entrenamiento, 4.681 de validación y 4.681 de prueba. Para la búsqueda, entrenamiento y validación se combinan en un conjunto de desarrollo de 26.521 filas. Sobre este conjunto se ejecuta `GridSearchCV` con K-Fold de 5 folds, barajado y semilla fija (`random_state=0`). Se evalúan 49 valores de `alpha` entre `10^-8` y `10^4`, seleccionando el menor RMSE en escala logarítmica. El preprocesamiento permanece dentro del pipeline, de modo que imputación, escalado y codificación se ajustan de nuevo en cada fold. El conjunto de prueba no interviene en esta selección.
 
-**Limitaciones experimentales:** la selección de `alpha` usa un único conjunto de validación (holdout), no validación cruzada. Además, aunque Ridge y Random Forest/MLP usan particiones 70/15/15 de v4 con el mismo tamaño de test, sus índices no coinciden; por tanto, sus métricas no son una comparación pareada ni deben usarse para establecer un ranking definitivo. El mejor valor de `alpha` está en el límite inferior de la rejilla explorada y las métricas en escala original muestran un R² bajo; se recomienda ampliar la búsqueda hacia valores menores y evaluar con validación cruzada dentro del conjunto de entrenamiento antes de extraer conclusiones.
+La búsqueda seleccionó `alpha=31,6228`, con RMSE medio de validación cruzada de **0,8550** en escala logarítmica. La desviación estándar entre folds fue aproximadamente **0,0129**, lo que indica resultados similares entre las particiones de validación. El mejor valor no está en un extremo de la rejilla y los valores cercanos de `alpha` obtuvieron resultados prácticamente equivalentes.
+
+Una vez seleccionado el hiperparámetro, `GridSearchCV` reajusta el mejor pipeline con las 26.521 observaciones del conjunto de desarrollo (`refit=True`). El conjunto de prueba se utiliza después para una única evaluación final.
+
+#### Resultados y lectura del modelo
+
+En el test de 4.681 filas, Ridge obtuvo:
+
+| Métrica | Resultado |
+|---|---:|
+| MAE log | **0,6081** |
+| RMSE log | **0,8776** |
+| R² log | **0,4800** |
+| MAE original | **990,9 ventas** |
+| RMSE original | **5.662,6 ventas** |
+| R² original | **0,0725** |
+
+El resultado muestra una diferencia importante entre escalas: el modelo explica cerca del 48 % de la variabilidad del objetivo transformado, pero solo alrededor del 7,2 % en unidades originales. El MAE y, especialmente, el RMSE en unidades reflejan errores relevantes en productos con volúmenes altos de compras.
+
+El análisis de las predicciones también evidencia una tendencia a subestimar la cola alta del objetivo. En el test, el error absoluto medio aumenta notablemente en los segmentos de mayores ventas; para productos con más de 9.500 compras, la subestimación es especialmente marcada. Por ello, Ridge puede describir parte de la tendencia general en escala logarítmica, pero sus predicciones en unidades originales deben interpretarse con cautela cuando se trata de productos de alta demanda.
+
+#### Comparación con la versión anterior y limitaciones
+
+La versión anterior seleccionaba `alpha` con un único conjunto de validación y había elegido el límite inferior de su rejilla (`0,0001`). La nueva búsqueda con cinco folds seleccionó un valor mayor (`31,6228`), pero las métricas de test permanecieron prácticamente iguales: no hay evidencia de una mejora predictiva material. La mejora de esta versión es principalmente metodológica: selección más robusta de `alpha`, preprocesamiento ajustado dentro de cada fold y separación del test.
+
+Aunque Ridge y Random Forest/MLP usan particiones 70/15/15 de v4 con el mismo tamaño de test, los índices de Ridge son diferentes. Por tanto, sus métricas no son una comparación pareada ni permiten establecer por sí solas un ranking definitivo. Además, el desempeño bajo en escala original y la subestimación de ventas altas son limitaciones que deben quedar explícitas al presentar el modelo.
+
+El notebook exporta el pipeline final (`ridge_final.joblib`), `metrics.json`, `best_hyperparameters.json`, `cross_validation_results.csv`, `hyperparameter_search.csv`, `test_predictions.csv` y `split_indices.json`. Estos archivos permiten consultar tanto la selección de hiperparámetros como la evaluación final sin volver a entrenar el modelo.
 
 ### Red neuronal MLP Regressor
 
@@ -347,7 +372,7 @@ comparación sí usa exactamente los mismos índices; dentro del par KNN/SVR tam
 | `Modelos entrenados/Models_Results/svm/` | `metrics.json`, `validation_summary.csv`, `hyperparameter_search.csv`, `test_predictions.csv`, `error_by_sales_category.csv`, `svr_v1_final.joblib`–`svr_v4_final.joblib` y gráficas. |
 | `Modelos entrenados/Models_Results/results_random_forest/` | `metrics.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, importancia de variables, árbol, residuos y modelo serializado. |
 | `Modelos entrenados/Models_Results/mlp/` | `metrics.json`, `best_hyperparameters.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json`, curva de pérdida y modelo serializado. |
-| `Modelos entrenados/Models_Results/results_ridge/` | `metrics.json`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json` y pipeline Ridge serializado. |
+| `Modelos entrenados/Models_Results/results_ridge/` | `metrics.json`, `best_hyperparameters.json`, `cross_validation_results.csv`, `hyperparameter_search.csv`, `test_predictions.csv`, `split_indices.json` y pipeline Ridge serializado. |
 
 Los detalles de configuración, validación, limitaciones y resultados completos están en los notebooks
 y en los archivos `metrics.json` de cada carpeta.
